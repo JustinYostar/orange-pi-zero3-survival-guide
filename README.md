@@ -59,7 +59,8 @@
 │   └── interfaces.example   # 网络接口配置参考
 ├── optimization/            # ⚡ 系统优化脚本
 │   ├── swap-setup.sh        # 一键配置 2GB Swap + Swappiness
-│   └── kernel-lock.sh       # 内核锁定脚本 (防变砖)
+│   ├── kernel-lock.sh       # 内核锁定脚本 (防变砖)
+│   └── watchdog-led.sh      # 看门狗保命 + LED 心跳灯
 ├── docker-templates/        # 🐳 Docker 构建模板 (CN Special)
 │   ├── nodejs/              # 内置 npmmirror 源
 │   ├── rust/                # 内置 USTC 源
@@ -68,7 +69,17 @@
     └── backup-guide.md      # 备份操作手册
     
 ```
+### 临时手动关闭看门狗：
+```
+# 1. 在大动作之前
+sudo systemctl stop watchdog
 
+# 2. 执行你的耗时操作 (编译/升级)
+apt upgrade ...
+
+# 3. 完事后重新开启
+sudo systemctl start watchdog
+```
 ---
 ## ⚠️ 运维十诫 (The Ten Commandments)
 
