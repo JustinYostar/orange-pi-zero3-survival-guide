@@ -3,128 +3,94 @@
 ![Platform](https://img.shields.io/badge/Platform-ARM64%20%7C%20H618-orange?style=flat-square)
 ![System](https://img.shields.io/badge/System-Armbian%20%2F%20Debian-blue?style=flat-square&logo=debian)
 ![Docker](https://img.shields.io/badge/Docker-Production%20Ready-2496ED?style=flat-square&logo=docker)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Stable-green?style=flat-square)
 
-> **榨干 1GB 内存的极致性能：透明网桥 + Docker 编译站 + 私有云方案。**
-> *Turning the Orange Pi Zero 3 into a robust micro-server and transparent bridge.*
+> **榨干 1GB 内存的极致性能：NAT 网关 + 科学网络 + Docker 编译站 + 私有云方案。**
+> *A step-by-step guide to turning the Orange Pi Zero 3 into a robust micro-server.*
 
 ---
 
 ## 📖 项目简介 (Introduction)
 
-本项目是针对 **Orange Pi Zero 3 (Allwinner H618, 1GB RAM)** 的全套调优与运维指南。
+本项目记录了如何在 **Orange Pi Zero 3 (Allwinner H618, 1GB RAM)** 上，克服内核阉割、内存不足、网络受限等困难，打造一个极其稳定的微型服务器与透明网关。
 
-旨在解决以下核心痛点：
-1.  **内核阉割**：官方/社区固件常缺失 ZRAM 等模块，导致系统易死机。
-2.  **网络受限**：ARM 架构下 Node.js/Rust 依赖下载缓慢，构建失败。
-3.  **单网口限制**：如何利用 WiFi 接口实现 Layer 3 透明网桥，为其他设备供网。
-4.  **维护风险**：`apt upgrade` 意外更新内核导致 WiFi 驱动失效。
+**核心成果：**
+* **网络中枢**：作为 NAT 二级路由，提供 DHCP、DNS 缓存与透明代理（ShellCrash）。
+* **全屋净网**：集成 AdGuard Home，实现全屋设备去广告与隐私保护。
+* **生产力工具**：部署自研的图片水印工具与 PicSeal 隐私印章。
+* **系统防爆**：针对无 ZRAM 环境的 Swap 调优与内核锁定策略。
 
 ---
 
-## 📂 目录结构 (Directory Structure)
+## 🗺️ 实战路线图 (Roadmap)
+
+**请按照以下顺序进行配置，不要跳步：**
+
+### [第一步：基础准备与初始化](./01-initial-setup.md)
+* **内容**：硬件避坑（电源/散热）、系统烧录、换源、SSH 连接。
+* **目标**：让板子成功联网并处于一个干净、高速的初始状态。
+
+### [第二步：NAT 网关与网络魔法](./02-nat-network-proxy.md)
+* **内容**：配置 NAT 转发、dnsmasq DHCP 服务、部署 ShellCrash。
+* **目标**：把 Pi 变成一个透明网关，下游设备插线即用，自动科学上网。
+
+### [第三步：Docker 环境与 AdGuard Home](./03-adguard-home.md)
+* **内容**：安装 Docker、配置国内加速镜像、解决 53 端口冲突、部署 AdGuard Home。
+* **目标**：搭建容器基础环境，并接管 DNS 实现去广告。
+
+### [第四步：必装应用推荐](./04-essential-apps.md)
+* **内容**：部署水印工具、PicSeal、Dockge 管理面板、Watchtower 自动更新。
+* **目标**：让服务器具备生产力功能。
+
+### [第五步：系统清理与终极维护](./05-final-maintenance.md)
+* **内容**：限制日志大小、Docker 垃圾清理策略、全盘冷备份指南。
+* **目标**：防止 SD 卡爆满，确保持续稳定运行。
+
+---
+
+## 📂 资源目录 (Resources)
+
+除了上述文档，本项目还包含以下脚本与模板供高级用户使用：
 
 ```text
 .
-├── network/                 # 🌐 网络魔改模块
-│   ├── bridge-setup.sh      # 透明网桥启动脚本 (parprouted + dhcp-helper)
-│   └── interfaces.example   # /etc/network/interfaces 配置模板
-├── optimization/            # ⚡ 系统内核调优模块
-│   ├── swap-setup.sh        # 一键配置 2GB Swap + Swappiness 优化
-│   └── kernel-lock.sh       # 锁定内核版本，防止驱动失效
-├── docker-templates/        # 🐳 Docker 构建加速模板 (CN Special)
+├── network/                 # 🌐 网络配置备份
+│   ├── bridge-setup.sh      # (备用) 透明网桥启动脚本
+│   └── interfaces.example   # 网络接口配置参考
+├── optimization/            # ⚡ 系统优化脚本
+│   ├── swap-setup.sh        # 一键配置 2GB Swap + Swappiness
+│   └── kernel-lock.sh       # 内核锁定脚本 (防变砖)
+├── docker-templates/        # 🐳 Docker 构建模板 (CN Special)
 │   ├── nodejs/              # 内置 npmmirror 源
-│   ├── rust/                # 内置 USTC 源 + Cargo 配置
-│   └── deno/                # 轻量级 Deno 运行环境
-└── maintenance/             # 🛡️ 运维与灾备
-    └── backup-guide.md      # 系统全盘冷备份与恢复指南
-```
-## 🚀 核心功能 (Features)
-
-### 1. 透明网桥 (Transparent Bridge)
-
-利用 `parprouted` 实现 ARP 代理，让 WLAN0 (无线) 和 ETH0 (有线) 处于同一网段。
-
-- **场景**：电视/电脑通过网线连接 Pi，Pi 通过 WiFi 上网。
+│   ├── rust/                # 内置 USTC 源
+│   └── deno/                # Deno 环境
+└── maintenance/             # 🛡️ 维护脚本
+    └── backup-guide.md      # 备份操作手册
     
-- **优势**：无需 NAT，支持从主路由直接管理子设备。
-    
-
-### 2. Docker 编译加速工厂 (Build Factory)
-
-专为中国大陆网络环境优化的 `Dockerfile` 模板，解决 ARM64 架构下编译超时的痛点。
-
-- **Rust**: 集成 USTC 镜像源，解决 `crates.io` 索引更新慢的问题。
-    
-- **Node.js**: 集成 `npmmirror`，秒级安装依赖。
-    
-
-### 3. 系统防爆机制 (System Hardening)
-
-针对 1GB 小内存环境的生存策略：
-
-- **智能 Swap**: 只有当物理内存剩余 <10% 时才使用 Swap，保护 SD 卡寿命并防止卡顿。
-    
-- **内核锁**: 自动化脚本锁定 `linux-image` 和 `linux-dtb`，防止自动更新导致“变砖”。
-    
-
----
-
-## 🛠️ 快速开始 (Quick Start)
-
-### 第一步：系统初始化与防爆
-
-下载仓库并运行优化脚本：
-
-Bash
-
-```
-git clone [https://github.com/YourUsername/orange-pi-zero3-survival-guide.git](https://github.com/YourUsername/orange-pi-zero3-survival-guide.git)
-cd orange-pi-zero3-survival-guide/optimization
-
-# 1. 开启 Swap 并优化内存调度
-sudo bash swap-setup.sh
-
-# 2. 锁定内核 (至关重要!)
-sudo bash kernel-lock.sh
-```
-
-### 第二步：配置透明网桥
-
-请参考 `network/` 目录下的配置文件。
-
-1. 将 `interfaces.example` 内容适配后写入 `/etc/network/interfaces`。
-    
-2. 设置 `bridge-setup.sh` 开机自启。
-    
-
-### 第三步：构建 Docker 镜像
-
-进入 `docker-templates` 选择对应语言模板：
-
-Bash
-
-```
-cd docker-templates/nodejs
-# 使用 Host 网络模式以避免 DNS 问题
-docker build --network=host -t my-node-app .
 ```
 
 ---
-
 ## ⚠️ 运维十诫 (The Ten Commandments)
 
-1. **绝对禁止** 运行 `apt dist-upgrade`（内核更新必挂 WiFi）。
+1. **绝对禁止** 运行 `apt dist-upgrade`（内核更新必挂 WiFi 驱动）。
     
 2. **谨慎** 使用 `apt upgrade`，建议只单独更新需要的软件包。
     
-3. Docker 容器建议限制内存，例如 `--memory="256m"`。
+3. **注意网卡名称**：配置网络时，务必检查是 `eth0` 还是 `end0`。
     
-4. 重大变更前，请使用 **Win32DiskImager** 进行全盘冷备份。
+4. Docker 容器建议限制内存，例如 `--memory="256m"`。
     
-5. **散热是刚需**：H618 发热量大，必须加装散热片。
+5. 重大变更前，请使用 **Win32DiskImager** 进行全盘冷备份。
     
-6. 没有 USB 3.0 U盘做 Swap 的话，请务必买一张 A1/A2 级的高速 SD 卡。
+6. **散热是刚需**：H618 发热量大，必须加装散热片。
+    
+7. 没有 USB 3.0 U盘做 Swap 的话，请务必买一张 A1/A2 级的高速 SD 卡。
+    
+8. 能用 Docker 跑的服务，绝不直接装在宿主机上（ShellCrash 除外）。
+    
+9. 定期清理 Docker 垃圾：`docker system prune`。
+    
+10. **If it works, don't touch it.** (能跑就别动)。
     
 
 ---
