@@ -1,0 +1,26 @@
+# /etc/network/interfaces 配置参考
+# 警告：修改网络配置有风险，请务必先备份原文件！
+
+source /etc/network/interfaces.d/*
+
+# 1. 本地回环接口
+auto lo
+iface lo inet loopback
+
+# 2. 无线接口 (wlan0) - 作为主要的上行链路
+# 建议配置静态 IP，方便 SSH 连接管理
+allow-hotplug wlan0
+iface wlan0 inet static
+    address 192.168.1.200    # 你的板子 IP
+    netmask 255.255.255.0
+    gateway 192.168.1.1      # 你的主路由 IP
+    dns-nameservers 192.168.1.1 223.5.5.5
+    wpa-ssid "你的WiFi名称"
+    wpa-psk  "你的WiFi密码"
+
+# 3. 有线接口 (eth0) - 作为下行桥接接口
+# 注意：这里必须设为 manual (手动)，不要设 dhcp 或 static
+# 因为 parprouted 会接管它
+allow-hotplug eth0
+iface eth0 inet manual
+    pre-up ifconfig eth0 0.0.0.0 up
